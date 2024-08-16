@@ -29,8 +29,10 @@ Resources:
       IpProtocol: tcp
       FromPort: 80
       ToPort: 80
-      SourceSecurityGroupId:
-        Fn::ImportValue: !Sub "${HttpApiStack}-VpcLinkSecurityGroup"
+      CidrIp: 0.0.0.0/0 # Allow all traffic on port 80 for initial deploy
+      # Comment out the CidrIp property and uncomment the following lines to allow traffic only from the VPC Link
+      # SourceSecurityGroupId:
+      #   Fn::ImportValue: !Sub "${HttpApiStack}-VpcLinkSecurityGroup"
 
   ALBSecurityGroupEgress:
     Type: 'AWS::EC2::SecurityGroupEgress'
