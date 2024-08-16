@@ -1,0 +1,88 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: AWS SAM template Application Load Balancer
+
+Parameters:
+  VpcStack:
+    Type: String
+    Default: apigw-private-integrations-vpc
+  Ec2Stack:
+    Type: String
+    Default: ec2-apache
+  HttpApiStack:
+    Type: String
+    Default: http-api-private-integration
+
+Resources:
+  ALBSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupName: alb-security-group
+      GroupDescription: Allow HTTP traffic
+      VpcId:
+        Fn::ImportValue: !Sub "${VpcStack}-VpcId"
+
+  ALBSecurityGroupIngressHTTP:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref ALBSecurityGroup
+      IpProtocol: tcp
+      FromPort: 80
+      ToPort: 80
+      SourceSecurityGroupId:
+        Fn::ImportValue: !Sub "${HttpApiStack}-VpcLinkSecurityGroup"
+
+  ALBSecurityGroupEgress:
+    Type: 'AWS::EC2::SecurityGroupEgress'
+    Properties:
+      GroupId: !Ref ALBSecurityGroup
+      IpProtocol: -1
+      CidrIp: 0.0.0.0/0
+
+  ApplicationLoadBalancer:
+    Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
+    Properties:
+      Subnets:
+        - Fn::ImportValue: !Sub "${VpcStack}-PrivateSubnet1Id"
+        - Fn::ImportValue: !Sub "${VpcStack}-PrivateSubnet2Id"
+      SecurityGroups:
+        - !Ref ALBSecurityGroup
+      Scheme: internal
+
+  TargetGroup:
+    Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
+    Properties:
+      VpcId: 
+        Fn::ImportValue: !Sub "${VpcStack}-VpcId"
+      Port: 80
+      Protocol: HTTP
+      TargetType: instance
+      HealthCheckProtocol: HTTP
+      HealthCheckPort: 80
+      HealthCheckPath: /
+      Targets:
+        - 
+          Id: 
+            Fn::ImportValue: !Sub "${Ec2Stack}-EC2InstanceId"
+          Port: 80
+
+  ALBListener:
+    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+    Properties:
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup
+Outputs:
+  ALBArn:
+    Description: "Application Load Balancer ARN"
+    Value: !Ref ApplicationLoadBalancer
+    Export:
+      Name: !Sub '${AWS::StackName}-ALBArn'
+  ALBListenerArn:
+    Description: "Application Load Balancer Listener ARN"
+    Value: !GetAtt ALBListener.ListenerArn
+    Export:
+      Name: !Sub '${AWS::StackName}-ALBListenerArn'

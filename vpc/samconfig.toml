@@ -1,0 +1,19 @@
+version = 0.1
+
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "apigw-private-integrations-vpc"
+capabilities = "CAPABILITY_IAM"
+template_file = "vpc.yaml"
+output_template_file = "vpc-packaged-template.yaml"
+region = "us-east-1"
+resolve_s3 = true
+s3_prefix = "apigw-private-integrations-vpc"
+confirm_changeset = true
+parameter_overrides = "VpcCidr=\"10.0.0.0/24\" PublicSubnet1Cidr=\"10.0.0.64/26\" PublicSubnet2Cidr=\"10.0.0.128/26\" PrivateSubnet1Cidr=\"10.0.0.0/26\" PrivateSubnet2Cidr=\"10.0.0.192/26\""
+image_repositories = []
+
+[default.package.parameters]
+template_file = "vpc.yaml"
+stack_name = "apigw-private-integrations-vpc"

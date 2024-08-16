@@ -1,0 +1,18 @@
+version = 0.1
+
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "ec2-apache"
+capabilities = "CAPABILITY_IAM"
+template_file = "ec2.yaml"
+output_template_file = "ec2-packaged-template.yaml"
+region = "us-east-1"
+resolve_s3 = true
+s3_prefix = "ec2-apache"
+confirm_changeset = true
+image_repositories = []
+
+[default.package.parameters]
+template_file = "ec2.yaml"
+stack_name = "ec2-apache"

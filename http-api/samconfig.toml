@@ -1,0 +1,18 @@
+version = 0.1
+
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "http-api-private-integration"
+capabilities = "CAPABILITY_IAM"
+template_file = "http-api.yaml"
+output_template_file = "packaged-template.yaml"
+region = "us-east-1"
+resolve_s3 = true
+s3_prefix = "http-api-private-integration"
+confirm_changeset = true
+image_repositories = []
+
+[default.package.parameters]
+template_file = "http-api.yaml"
+stack_name = "http-api-private-integration"

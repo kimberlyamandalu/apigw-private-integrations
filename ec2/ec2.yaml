@@ -1,0 +1,67 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: AWS SAM template HTTP API Gateway with VPC Link integration
+
+Parameters:
+  AmiId:
+    Type: AWS::EC2::Image::Id
+    Default: ami-06c68f701d8090592 # Amazon Linux 2 AMI
+    Description: The ID of the AMI to use for the EC2 instance
+  VpcStack:
+    Type: String
+    Default: apigw-private-integrations-vpc
+
+Resources:
+  EC2SecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupName: ec2-security-group
+      GroupDescription: Allow HTTP traffic
+      VpcId: 
+        Fn::ImportValue: !Sub "${VpcStack}-VpcId"
+
+  EC2SecurityGroupIngressHTTP:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref EC2SecurityGroup
+      IpProtocol: tcp
+      FromPort: 80
+      ToPort: 80
+      CidrIp: 0.0.0.0/0
+
+  EC2SecurityGroupEgress:
+    Type: 'AWS::EC2::SecurityGroupEgress'
+    Properties:
+      GroupId: !Ref EC2SecurityGroup
+      IpProtocol: -1
+      CidrIp: 0.0.0.0/0
+
+  EC2Instance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      InstanceType: t2.micro
+      SubnetId: 
+        Fn::ImportValue: !Sub "${VpcStack}-PrivateSubnet1Id"
+      SecurityGroupIds:
+        - !Ref EC2SecurityGroup
+      ImageId: !Ref AmiId
+      Tags:
+        - Key: Name
+          Value: private-ec2-apache
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          yum update -y
+          yum install -y httpd
+          systemctl start httpd
+          systemctl enable httpd
+
+          # Create index.html file in the proper directory
+          echo "<html><body><h1>Welcome to the HTTP Server</h1></body></html>" > /var/www/html/index.html
+
+Outputs:
+  EC2InstanceId:
+    Description: "EC2 Instance ID"
+    Value: !Ref EC2Instance
+    Export:
+      Name: !Sub '${AWS::StackName}-EC2InstanceId'

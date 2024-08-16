@@ -1,0 +1,92 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: Create HTTP API in API Gateway with private integration using VPC Link
+
+Parameters:
+  VpcStack:
+    Type: String
+    Default: apigw-private-integrations-vpc
+  AlbStack:
+    Type: String
+    Default: alb
+
+Resources:
+  ApiGatewayLogGroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: !Sub "/aws/api-gateway/${HttpApi}/logs"
+      RetentionInDays: 7
+
+  HttpVpcLinkSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupName: http-vpc-link-security-group
+      GroupDescription: Allow inbound HTTP traffic
+      VpcId:
+        Fn::ImportValue: !Sub "${VpcStack}-VpcId"
+
+  HttpVpcLinkSecurityGroupIngressHTTP:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref HttpVpcLinkSecurityGroup
+      IpProtocol: tcp
+      FromPort: 80
+      ToPort: 80
+      CidrIp: 0.0.0.0/0
+
+  HttpVpcLinkSecurityGroupEgress:
+    Type: 'AWS::EC2::SecurityGroupEgress'
+    Properties:
+      GroupId: !Ref HttpVpcLinkSecurityGroup
+      IpProtocol: -1
+      CidrIp: 0.0.0.0/0
+  
+  VpcLink:
+    Type: 'AWS::ApiGatewayV2::VpcLink'
+    Properties:
+      Name: http-vpc-link
+      SubnetIds:
+        - Fn::ImportValue: !Sub "${VpcStack}-PrivateSubnet1Id"
+        - Fn::ImportValue: !Sub "${VpcStack}-PrivateSubnet2Id"
+      SecurityGroupIds:
+        - !Ref HttpVpcLinkSecurityGroup
+
+  HttpApi:
+    Type: 'AWS::Serverless::HttpApi'
+    Properties:
+      AccessLogSettings:
+        DestinationArn: !GetAtt ApiGatewayLogGroup.Arn
+        Format: '{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod","routeKey":"$context.routeKey", "status":"$context.status","protocol":"$context.protocol", "responseLength":"$context.responseLength" }'
+      DefaultRouteSettings:
+        DetailedMetricsEnabled: true
+        ThrottlingBurstLimit: 10
+        ThrottlingRateLimit: 10
+
+  ApiIntegration:
+    Type: 'AWS::ApiGatewayV2::Integration'
+    Properties:
+      ApiId: !Ref HttpApi
+      IntegrationType: HTTP_PROXY # Use HTTP_PROXY for private integrations
+      IntegrationMethod: ANY # Required for HTTP_PROXY
+      IntegrationUri:
+        Fn::ImportValue: !Sub "${AlbStack}-ALBListenerArn"
+      ConnectionType: VPC_LINK
+      ConnectionId: !Ref VpcLink
+      PayloadFormatVersion: '1.0'
+
+  AnyApiRoute:
+    Type: 'AWS::ApiGatewayV2::Route'
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: 'ANY /'
+      Target: !Sub 'integrations/${ApiIntegration}'
+  
+Outputs:
+  HttpApiUrl:
+    Description: "URL of the HTTP API"
+    Value: !Sub 'https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com'
+  VpcLinkSecurityGroup:
+    Description: "VPC Link Security Group"
+    Value: !Ref HttpVpcLinkSecurityGroup
+    Export:
+      Name: !Sub '${AWS::StackName}-VpcLinkSecurityGroup'
