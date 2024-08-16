@@ -14,7 +14,7 @@ Before deploying the resources, ensure you have the following installed and conf
 
 - [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html)
 - [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html)
-- Python virtual environment (e.g., [Anaconda](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html))
+- Python virtual environment (e.g., [Conda](https://docs.conda.io/projects/conda/en/stable/))
 - [AWS Credentials](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html) set up to deploy to your AWS environment
 
 ## Deployment Instructions
