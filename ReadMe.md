@@ -6,7 +6,7 @@ A VPC Link is a resource in Amazon API Gateway that allows you to connect your A
 
 ## Explore More: In-Depth Analysis of VPC Links
 
-For a thorough exploration of the patterns and best practices involved in API Gateway private integrations featured in this repository, we recommend reading the comprehensive article series by Serverless Guru:
+For a thorough exploration of the patterns and best practices involved in API Gateway private integrations featured in this repository, we recommend reading the comprehensive article series from [Serverless Guru](https://www.serverlessguru.com/):
 
 - [Private Integrations in Amazon API Gateway: A Guide](https://www.serverlessguru.com/blog/deep-dive-into-vpc-links-in-amazon-api-gateway)
 
