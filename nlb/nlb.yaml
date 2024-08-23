@@ -1,0 +1,113 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: AWS SAM template to create an internal Network Load Balancer (NLB) with private integrations
+
+Parameters:
+  VpcStack:
+    Type: String
+    Default: apigw-private-integrations-vpc
+  Ec2Stack:
+    Type: String
+    Default: ec2-apache
+
+Resources:
+  # Security Group for NLB
+  NLBSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupName: nlb-security-group
+      GroupDescription: Allow TCP traffic on port 443
+      VpcId:
+        Fn::ImportValue: !Sub "${VpcStack}-VpcId"
+
+  # # Inbound rule for NLB Security Group
+  # NLBSecurityGroupIngressHttps:
+  #   Type: 'AWS::EC2::SecurityGroupIngress'
+  #   Properties:
+  #     GroupId: !Ref NLBSecurityGroup
+  #     IpProtocol: tcp
+  #     FromPort: 443
+  #     ToPort: 443
+  #     CidrIp: 0.0.0.0/0
+
+  NLBSecurityGroupIngressHttp:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref NLBSecurityGroup
+      IpProtocol: tcp
+      FromPort: 80
+      ToPort: 80
+      CidrIp: 0.0.0.0/0
+
+  # Outbound rule for NLB Security Group
+  NLBSecurityGroupEgress:
+    Type: 'AWS::EC2::SecurityGroupEgress'
+    Properties:
+      GroupId: !Ref NLBSecurityGroup
+      IpProtocol: -1
+      CidrIp: 0.0.0.0/0
+
+  # Network Load Balancer
+  NetworkLoadBalancer:
+    Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
+    Properties:
+      Name: InternalNLB
+      Type: network
+      EnforceSecurityGroupInboundRulesOnPrivateLinkTraffic: "off"
+      IpAddressType: ipv4
+      Scheme: internal
+      Subnets:
+        - Fn::ImportValue: !Sub "${VpcStack}-PrivateSubnet1Id"
+        - Fn::ImportValue: !Sub "${VpcStack}-PrivateSubnet2Id"
+      SecurityGroups:
+        - !Ref NLBSecurityGroup
+
+  # Target Group for NLB
+  TargetGroup:
+    Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
+    Properties:
+      Name: internal-nlb-target-group
+      VpcId:
+        Fn::ImportValue: !Sub "${VpcStack}-VpcId"
+      Port: 80
+      Protocol: TCP
+      TargetType: instance
+      Targets:
+        -
+          Id: 
+            Fn::ImportValue: !Sub "${Ec2Stack}-EC2InstanceId"
+          Port: 80
+
+  # Listener for NLB
+  # NLBListenerHttps:
+  #   Type: 'AWS::ElasticLoadBalancingV2::Listener'
+  #   Properties:
+  #     LoadBalancerArn: !Ref NetworkLoadBalancer
+  #     Port: 443
+  #     Protocol: TCP
+  #     DefaultActions:
+  #       - Type: forward
+  #         TargetGroupArn: !Ref TargetGroup
+
+  NLBListenerHttp:
+    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+    Properties:
+      LoadBalancerArn: !Ref NetworkLoadBalancer
+      Port: 80
+      Protocol: TCP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup
+
+Outputs:
+  NetworkLoadBalancerArn:
+    Description: ARN of the Network Load Balancer
+    Value: !Ref NetworkLoadBalancer
+    Export:
+      Name: !Sub '${AWS::StackName}-nlb-arn'
+
+  NLBDNSName:
+    Description: DNS Name of NLB
+    Value: !GetAtt NetworkLoadBalancer.DNSName
+    Export:
+      Name: !Sub '${AWS::StackName}-nlb-dns-name'

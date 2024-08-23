@@ -1,0 +1,67 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: AWS SAM template to create a REST API in API Gateway with a VPC link to an NLB
+
+Parameters:
+  NlbStack:
+    Type: String
+    Default: nlb
+
+Resources:
+  # REST API
+  RestApi:
+    Type: 'AWS::Serverless::Api'
+    Properties:
+      Name: rest-api-private-integration
+      StageName: dev
+      TracingEnabled: true
+      EndpointConfiguration: REGIONAL
+      MethodSettings:
+        - 
+          CachingEnabled: false
+          DataTraceEnabled: true
+          HttpMethod: "*"
+          LoggingLevel: INFO
+          MetricsEnabled: false
+          ResourcePath: "/*"
+
+      DefinitionBody:
+        swagger: "2.0"
+        info:
+          title: "Rest API with Private Integration"
+          version: "1.0"
+        paths:
+          /ping:
+            get:
+              x-amazon-apigateway-integration:
+                type: http_proxy
+                httpMethod: GET
+                uri:
+                  Fn::Join:
+                    - ""
+                    - - "http://"
+                      - Fn::ImportValue: !Sub "${NlbStack}-nlb-dns-name"
+                  
+                connectionType: VPC_LINK
+                connectionId: !Ref VpcLink
+                passthroughBehavior: when_no_match
+                responses:
+                  default:
+                    statusCode: "200"
+
+  # VPC Link for REST API
+  VpcLink:
+    Type: 'AWS::ApiGateway::VpcLink'
+    Properties:
+      Name: rest-api-vpclink
+      TargetArns:
+        - Fn::ImportValue: !Sub "${NlbStack}-nlb-arn"
+
+Outputs:
+  RestApiId:
+    Description: ID of the REST API
+    Value: !Ref RestApi
+
+  RestApiUrl:
+    Description: URL of the REST API
+    Value: !Sub "https://${RestApi}.execute-api.${AWS::Region}.amazonaws.com/dev"

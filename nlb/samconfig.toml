@@ -1,0 +1,18 @@
+version = 0.1
+
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "nlb"
+capabilities = "CAPABILITY_IAM"
+template_file = "nlb.yaml"
+output_template_file = "nlb-packaged-template.yaml"
+region = "us-east-1"
+resolve_s3 = true
+s3_prefix = "nlb"
+confirm_changeset = true
+image_repositories = []
+
+[default.package.parameters]
+template_file = "nlb.yaml"
+stack_name = "nlb"
