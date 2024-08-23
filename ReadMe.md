@@ -1,60 +1,29 @@
-# HTTP API VPC Links for Private Integrations
-This project demonstrates how to use AWS HTTP API VPC Links for API Gateway private integrations. It includes all the necessary AWS resources and configurations to create a private, secure integration between an API Gateway and an internal web application hosted on an EC2 instance behind an Application Load Balancer (ALB).
+# API Gateway Private Integrations
 
-## Overview
-The repository is organized into the following directories:
+## What is a VPC Link?
 
-1. `vpc/`: Contains a SAM template to create a VPC with public and private subnets.
-2. `ec2/`: Contains a SAM template to create a private/internal EC2 instance running an Apache server. This web application will be used to test the private integration.
-3. `alb/`: Contains a SAM template to create an internal Application Load Balancer (ALB).
-4. `http-api/`: Contains a SAM template to build the API Gateway HTTP API and the VPC link.
+A VPC Link is a resource in Amazon API Gateway that allows you to connect your API to private resources inside a Virtual Private Cloud (VPC) in AWS. This enables secure communication between API Gateway and your backend services, such as applications running on EC2 instances, load balancers, or other services within the VPC. VPC Links are crucial for scenarios where you want to expose private applications through a public-facing API while maintaining network security and control.
 
-## Prerequisites
-Before deploying the resources, ensure you have the following installed and configured:
+## Explore More: In-Depth Analysis of VPC Links
 
-- [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html)
-- [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html)
-- Python virtual environment (e.g., [Conda](https://docs.conda.io/projects/conda/en/stable/))
-- [AWS Credentials](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html) set up to deploy to your AWS environment
+For a thorough exploration of the patterns and best practices involved in API Gateway private integrations featured in this repository, we recommend reading the comprehensive article series by Serverless Guru:
 
-## Deployment Instructions
-Each directory contains a template.yaml (SAM template) and a samconfig.toml file to predefine parameters for the SAM CLI. The resources must be deployed in the following order:
+- [Private Integrations in Amazon API Gateway: A Guide](https://www.serverlessguru.com/blog/deep-dive-into-vpc-links-in-amazon-api-gateway)
 
-1. **VPC**: Navigate into the `vpc/` directory and run the following commands:
-    ```bash
-    sam package
-    sam deploy
-    ```
+This series offers detailed insights into VPC links, demonstrating how they can be leveraged to enhance security and scalability in your AWS API integrations.
 
-2. **EC2**: Navigate into the `ec2/` directory and run the same commands:
-    ```bash
-    sam package
-    sam deploy
-    ```
+## Additional Resources and Deployment Guides
 
-3. **ALB**: Navigate into the `alb/` directory and run the same commands:
-    ```bash
-    sam package
-    sam deploy
-    ```
+This repository is organized into several components, each with its own deployment instructions. To get started, refer to the relevant README files:
 
-4. **HTTP API**: Navigate into the http-api/ directory and run the same commands:
-    ```bash
-    sam package
-    sam deploy
-    ```
-## Post-Deployment Steps
-After deploying the resources, update the ALB security group's inbound rule to only accept traffic on port 80 from the VPC link security group. Redeploy the ALB stack.
+1. **[Shared Resources ReadMe](./SharedResources-ReadMe.md)**: Includes instructions for deploying the foundational VPC and EC2 resources. These resources are used by both the HTTP API and REST API integrations.
 
-This ensures that only requests routed through the API Gateway can reach the web application.
+2. **[HTTP API ReadMe](./HttpApi-ReadMe.md)**: Provides step-by-step instructions for deploying the HTTP API and the Application Load Balancer (ALB) to create a secure, private integration with your backend services.
 
-## Testing the Integration
-Once everything is deployed and configured:
+3. **[REST API ReadMe](./RestApi-ReadMe.md)**: Offers guidance on deploying the REST API and the Network Load Balancer (NLB) to establish a private integration with your backend services.
 
-Open a web browser.
-Invoke the API Gateway HTTP API endpoint.
-If everything is configured correctly, you should see the page load with the message: "Welcome to the HTTP Server".
+By following the instructions in each of these README files, you can set up and configure the necessary infrastructure and API Gateway integrations to meet your specific use case.
 
-## Note on Custom Stages
-The solution described in this project works with the `$default` stage in API Gateway. To define a custom stage, additional steps are required. Please refer to the [AWS documentation on Private Integrations](https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-integrations-private.html#:~:text=secure%20server%20name.-,Note,-For%20private%20integrations) for further instructions.
+
+
 
